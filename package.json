@@ -1,0 +1,59 @@
+{
+  "name": "green-screen-studio-desktop",
+  "version": "1.0.0",
+  "description": "Aplicação Desktop para Remoção Automática de Fundo Verde",
+  "main": "main.js",
+  "author": "Green Screen Studio",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win",
+    "build-mac": "electron-builder --mac",
+    "build-linux": "electron-builder --linux",
+    "dist": "npm run build-win && npm run build-mac && npm run build-linux"
+  },
+  "build": {
+    "appId": "com.greenstudio.desktop",
+    "productName": "Green Screen Studio",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "**/*",
+      "!node_modules",
+      "!dist",
+      "!*.md"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.photography"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png",
+      "category": "Graphics"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^27.3.11",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  }
+}
