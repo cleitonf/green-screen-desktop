@@ -2,11 +2,13 @@ const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron')
 const path = require('path');
 const fs = require('fs').promises;
 const Store = require('electron-store');
+const LicenseManager = require('./license-manager');
 
 // Configurações persistentes
 const store = new Store({
     defaults: {
         outputFolder: '',
+        backgroundsFolder: '',
         autoSave: true,
         chromaSettings: {
             tolerance: 35,
@@ -19,13 +21,20 @@ const store = new Store({
         },
         autoOpenFolder: true,
         imageFormat: 'png',
-        imageQuality: 95
+        imageQuality: 95,
+        autoGenerateOnQRScan: true
     }
 });
 
 let mainWindow;
+let activationWindow; // ← NOVO
 let currentOutputFolder = store.get('outputFolder');
+let currentBackgroundsFolder = store.get('backgroundsFolder');
+const licenseManager = new LicenseManager();
 
+// ========================================
+// JANELA PRINCIPAL
+// ========================================
 function createWindow() {
     const bounds = store.get('windowBounds');
     
@@ -67,6 +76,10 @@ function createWindow() {
         store.set('windowBounds', mainWindow.getBounds());
     });
 
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+    });
+
     // Menu da aplicação
     createMenu();
 
@@ -76,6 +89,122 @@ function createWindow() {
     }
 }
 
+// ========================================
+// JANELA DE ATIVAÇÃO (NOVO)
+// ========================================
+function createActivationWindow() {
+    activationWindow = new BrowserWindow({
+        width: 600,
+        height: 750,
+        resizable: false,
+        center: true,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        },
+        autoHideMenuBar: true,
+        icon: path.join(__dirname, 'assets', 'icon.png'),
+        title: 'Ativação - Green Screen Studio'
+    });
+
+    activationWindow.loadFile('activation.html');
+
+    activationWindow.on('closed', () => {
+        activationWindow = null;
+        
+        // Se fechar janela de ativação sem ativar, fechar app
+        if (!mainWindow) {
+            app.quit();
+        }
+    });
+}
+
+// ========================================
+// IPC HANDLERS - LICENCIAMENTO (NOVO)
+// ========================================
+
+// Obter Hardware ID
+ipcMain.handle('get-hardware-id', async () => {
+    try {
+        const hwid = await licenseManager.getHardwareId();
+        return hwid;
+    } catch (error) {
+        console.error('Erro ao obter Hardware ID:', error);
+        return null;
+    }
+});
+
+// Ativar Licença
+ipcMain.handle('activate-license', async (event, licenseKey) => {
+    try {
+        console.log('🔑 Tentando ativar licença:', licenseKey);
+        const result = await licenseManager.activate(licenseKey);
+        
+        if (result.success) {
+            console.log('✅ Licença ativada com sucesso!');
+        } else {
+            console.log('❌ Falha na ativação:', result.error);
+        }
+        
+        return result;
+    } catch (error) {
+        console.error('Erro ao ativar licença:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+});
+
+// Obter informações da licença
+ipcMain.handle('get-license-info', async () => {
+    try {
+        const info = await licenseManager.getLicenseInfo();
+        return info;
+    } catch (error) {
+        console.error('Erro ao obter info da licença:', error);
+        return null;
+    }
+});
+
+// Desativar licença
+ipcMain.handle('deactivate-license', async () => {
+    try {
+        const result = await licenseManager.deactivate();
+        return { success: result };
+    } catch (error) {
+        console.error('Erro ao desativar:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Ativação completa - abrir janela principal
+ipcMain.on('activation-complete', () => {
+    if (activationWindow) {
+        activationWindow.close();
+        activationWindow = null;
+    }
+    createWindow();
+});
+
+// Abrir página de compra
+ipcMain.on('open-purchase-page', () => {
+    shell.openExternal('https://seu-site.com/comprar');
+});
+
+// Abrir suporte
+ipcMain.on('open-support', () => {
+    shell.openExternal('https://seu-site.com/suporte');
+});
+
+// Abrir FAQ
+ipcMain.on('open-faq', () => {
+    shell.openExternal('https://seu-site.com/faq');
+});
+
+// ========================================
+// MENU
+// ========================================
 function createMenu() {
     const template = [
         {
@@ -118,6 +247,49 @@ function createMenu() {
             ]
         },
         {
+            label: 'Licença', // ← NOVO MENU
+            submenu: [
+                {
+                    label: 'Informações da Licença',
+                    click: async () => {
+                        const info = await licenseManager.getLicenseInfo();
+                        if (info) {
+                            dialog.showMessageBox(mainWindow, {
+                                type: 'info',
+                                title: 'Informações da Licença',
+                                message: 'Licença Ativa',
+                                detail: `Chave: ${info.license_key}\n` +
+                                       `Tipo: ${info.license_type}\n` +
+                                       `Ativada em: ${new Date(info.activated_at).toLocaleDateString()}\n` +
+                                       `Expira: ${info.expires_at ? new Date(info.expires_at).toLocaleDateString() : 'Nunca'}`
+                            });
+                        }
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Desativar Licença',
+                    click: async () => {
+                        const result = await dialog.showMessageBox(mainWindow, {
+                            type: 'warning',
+                            title: 'Desativar Licença',
+                            message: 'Tem certeza que deseja desativar a licença?',
+                            detail: 'Você precisará ativar novamente para usar o software.',
+                            buttons: ['Cancelar', 'Desativar'],
+                            defaultId: 0,
+                            cancelId: 0
+                        });
+
+                        if (result.response === 1) {
+                            await licenseManager.deactivate();
+                            app.relaunch();
+                            app.quit();
+                        }
+                    }
+                }
+            ]
+        },
+        {
             label: 'Visualizar',
             submenu: [
                 { label: 'Recarregar', accelerator: 'CmdOrCtrl+R', role: 'reload' },
@@ -145,6 +317,15 @@ function createMenu() {
                             buttons: ['OK']
                         });
                     }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Comprar Licença',
+                    click: () => shell.openExternal('https://seu-site.com/comprar')
+                },
+                {
+                    label: 'Suporte',
+                    click: () => shell.openExternal('https://seu-site.com/suporte')
                 }
             ]
         }
@@ -154,8 +335,51 @@ function createMenu() {
     Menu.setApplicationMenu(menu);
 }
 
-// IPC Handlers
+// ========================================
+// IPC Handlers - FUNCIONAIS EXISTENTES
+// ========================================
 ipcMain.handle('select-output-folder', selectOutputFolder);
+ipcMain.handle('select-backgrounds-folder', selectBackgroundsFolder);
+
+ipcMain.handle('load-backgrounds-from-folder', async () => {
+    if (!currentBackgroundsFolder) {
+        return { success: false, backgrounds: [] };
+    }
+    
+    try {
+        const files = await fs.readdir(currentBackgroundsFolder);
+        const imageFiles = files.filter(file => {
+            const ext = path.extname(file).toLowerCase();
+            return ['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext);
+        });
+        
+        const backgrounds = [];
+        
+        for (const file of imageFiles) {
+            const filePath = path.join(currentBackgroundsFolder, file);
+            const data = await fs.readFile(filePath);
+            const base64 = `data:image/${path.extname(file).slice(1)};base64,${data.toString('base64')}`;
+            
+            backgrounds.push({
+                name: path.basename(file, path.extname(file)),
+                filename: file,
+                data: base64
+            });
+        }
+        
+        console.log(`✅ Carregados ${backgrounds.length} fundos de: ${currentBackgroundsFolder}`);
+        
+        return {
+            success: true,
+            backgrounds,
+            folder: currentBackgroundsFolder
+        };
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar fundos:', error);
+        return { success: false, backgrounds: [], error: error.message };
+    }
+});
 
 ipcMain.handle('save-images-batch', async (event, images, sessionInfo = null) => {
     if (!currentOutputFolder) {
@@ -166,36 +390,94 @@ ipcMain.handle('save-images-batch', async (event, images, sessionInfo = null) =>
     let sessionFolder;
     
     try {
-        // Criar pasta da sessão
+        // Determinar pasta do cliente
         if (sessionInfo && sessionInfo.sessionFolder) {
             sessionFolder = path.join(currentOutputFolder, sessionInfo.sessionFolder);
+        } else if (sessionInfo && sessionInfo.sessionCode) {
+            sessionFolder = path.join(currentOutputFolder, sessionInfo.sessionCode);
         } else {
-            // Fallback para pasta com timestamp se não houver sessão
             const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-            sessionFolder = path.join(currentOutputFolder, `GreenScreen_${timestamp}`);
+            sessionFolder = path.join(currentOutputFolder, `Cliente_${timestamp}`);
         }
         
+        // Criar pastas
+        const originalsFolder = path.join(sessionFolder, 'originais');
         await fs.mkdir(sessionFolder, { recursive: true });
+        await fs.mkdir(originalsFolder, { recursive: true });
+        
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('💾 SALVANDO IMAGENS');
+        console.log('📁 Cliente:', sessionFolder);
+        console.log('📁 Originais:', originalsFolder);
+        console.log('🖼️ Total de imagens:', images.length);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        // Salvar cada imagem
+        // ✅ DEBUG: Verificar se imagens têm originalData
+        console.log('\n🔍 DEBUG - Verificando originalData:');
+        images.forEach((img, i) => {
+            console.log(`  ${i + 1}. ${img.filename}`);
+            console.log(`     Tem originalData? ${!!img.originalData}`);
+            console.log(`     poseId: ${img.poseId}`);
+        });
+
+        // ✅ AGRUPAR POR POSE ID (mais confiável que regex)
+        const photoGroups = new Map();
+        
+        images.forEach(image => {
+            const poseId = image.poseId || 'unknown';
+            
+            if (!photoGroups.has(poseId)) {
+                photoGroups.set(poseId, []);
+            }
+            photoGroups.get(poseId).push(image);
+        });
+
+        console.log(`\n📊 ${photoGroups.size} poses agrupadas`);
+
+        // ✅ SALVAR ORIGINAIS (um por pose)
+        console.log('\n📸 SALVANDO ORIGINAIS:');
+        let originalsCount = 0;
+        
+        for (const [poseId, groupImages] of photoGroups.entries()) {
+            console.log(`\n  Pose ${poseId}:`);
+            console.log(`    Grupo tem ${groupImages.length} imagens`);
+            
+            if (groupImages.length > 0) {
+                const firstImage = groupImages[0];
+                console.log(`    Primeira imagem: ${firstImage.filename}`);
+                console.log(`    Tem originalData? ${!!firstImage.originalData}`);
+                
+                if (firstImage.originalData) {
+                    const originalFilename = `Pose_${poseId}_original.png`;
+                    const originalPath = path.join(originalsFolder, originalFilename);
+                    
+                    try {
+                        const base64Data = firstImage.originalData.replace(/^data:image\/\w+;base64,/, '');
+                        const buffer = Buffer.from(base64Data, 'base64');
+                        
+                        await fs.writeFile(originalPath, buffer);
+                        originalsCount++;
+                        console.log(`    ✓ Salvo: ${originalFilename} (${(buffer.length / 1024).toFixed(1)} KB)`);
+                    } catch (err) {
+                        console.error(`    ❌ Erro ao salvar original:`, err.message);
+                    }
+                } else {
+                    console.log(`    ⚠️ originalData não encontrado!`);
+                }
+            }
+        }
+
+        // ✅ SALVAR PROCESSADAS
+        console.log('\n🎨 SALVANDO PROCESSADAS:');
+        
         for (let i = 0; i < images.length; i++) {
             const image = images[i];
-            
-            // Se há info da sessão, incluir o código no nome do arquivo
-            let filename;
-            if (sessionInfo && sessionInfo.sessionCode) {
-                filename = `${sessionInfo.sessionCode}_${image.filename}`;
-            } else {
-                filename = image.filename;
-            }
-            
+            const filename = image.filename;
             const filepath = path.join(sessionFolder, filename);
             
-            // Converter base64 para buffer
             const base64Data = image.data.replace(/^data:image\/\w+;base64,/, '');
             const buffer = Buffer.from(base64Data, 'base64');
             
-            // Salvar arquivo
             await fs.writeFile(filepath, buffer);
             
             results.push({
@@ -204,7 +486,8 @@ ipcMain.handle('save-images-batch', async (event, images, sessionInfo = null) =>
                 success: true
             });
 
-            // Enviar progresso
+            console.log(`  ${i + 1}/${images.length} ✓ ${filename}`);
+
             mainWindow.webContents.send('save-progress', {
                 current: i + 1,
                 total: images.length,
@@ -212,22 +495,13 @@ ipcMain.handle('save-images-batch', async (event, images, sessionInfo = null) =>
             });
         }
 
-        // Criar arquivo de informações da sessão
-        if (sessionInfo && sessionInfo.sessionCode) {
-            const sessionInfoFile = {
-                sessionCode: sessionInfo.sessionCode,
-                timestamp: new Date().toISOString(),
-                imageCount: images.length,
-                backgrounds: [...new Set(images.map(img => img.filename.split('_').pop()))],
-                poses: [...new Set(images.map(img => img.poseId))],
-                generated: 'Green Screen Studio Desktop v1.0'
-            };
-            
-            const infoPath = path.join(sessionFolder, `sessao_${sessionInfo.sessionCode}.json`);
-            await fs.writeFile(infoPath, JSON.stringify(sessionInfoFile, null, 2));
-        }
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('✅ SALVAMENTO CONCLUÍDO!');
+        console.log(`📸 ${originalsCount} originais salvos`);
+        console.log(`🎨 ${results.length} processadas salvas`);
+        console.log('📂 Pasta:', sessionFolder);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        // Abrir pasta automaticamente se configurado
         if (store.get('autoOpenFolder')) {
             shell.openPath(sessionFolder);
         }
@@ -235,12 +509,15 @@ ipcMain.handle('save-images-batch', async (event, images, sessionInfo = null) =>
         return {
             success: true,
             folder: sessionFolder,
+            originalsFolder: originalsFolder,
             count: results.length,
+            originalsCount: originalsCount,
             results,
-            clientCode: sessionInfo?.sessionCode || null
+            clientCode: sessionInfo?.sessionCode || sessionInfo?.sessionFolder || null
         };
 
     } catch (error) {
+        console.error('❌ Erro ao salvar:', error);
         throw error;
     }
 });
@@ -248,9 +525,11 @@ ipcMain.handle('save-images-batch', async (event, images, sessionInfo = null) =>
 ipcMain.handle('get-config', () => {
     return {
         outputFolder: currentOutputFolder,
+        backgroundsFolder: currentBackgroundsFolder,
         settings: store.get('chromaSettings'),
         autoSave: store.get('autoSave'),
         autoOpenFolder: store.get('autoOpenFolder'),
+        autoGenerateOnQRScan: store.get('autoGenerateOnQRScan'),
         imageFormat: store.get('imageFormat'),
         imageQuality: store.get('imageQuality')
     };
@@ -265,6 +544,9 @@ ipcMain.handle('save-config', (event, config) => {
     }
     if (config.autoOpenFolder !== undefined) {
         store.set('autoOpenFolder', config.autoOpenFolder);
+    }
+    if (config.autoGenerateOnQRScan !== undefined) {
+        store.set('autoGenerateOnQRScan', config.autoGenerateOnQRScan);
     }
     if (config.imageFormat) {
         store.set('imageFormat', config.imageFormat);
@@ -289,13 +571,30 @@ async function selectOutputFolder() {
         currentOutputFolder = result.filePaths[0];
         store.set('outputFolder', currentOutputFolder);
         
-        // Atualizar menu
         createMenu();
-        
-        // Notificar renderer
         mainWindow.webContents.send('output-folder-changed', currentOutputFolder);
         
         return currentOutputFolder;
+    }
+    
+    return null;
+}
+
+async function selectBackgroundsFolder() {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory'],
+        title: 'Escolher Pasta com os Fundos (Backgrounds)',
+        defaultPath: currentBackgroundsFolder || app.getPath('pictures')
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+        currentBackgroundsFolder = result.filePaths[0];
+        store.set('backgroundsFolder', currentBackgroundsFolder);
+        
+        console.log('📁 Pasta de fundos selecionada:', currentBackgroundsFolder);
+        mainWindow.webContents.send('backgrounds-folder-changed', currentBackgroundsFolder);
+        
+        return currentBackgroundsFolder;
     }
     
     return null;
@@ -311,8 +610,23 @@ function openSettings() {
     mainWindow.webContents.send('open-settings');
 }
 
-// App Events
-app.whenReady().then(createWindow);
+// ========================================
+// APP EVENTS - MODIFICADO PARA LICENCIAMENTO
+// ========================================
+app.whenReady().then(async () => {
+    console.log('🚀 Green Screen Studio Desktop iniciando...');
+    
+    // Verificar se está ativado
+    const isActivated = await licenseManager.isActivated();
+    
+    if (isActivated) {
+        console.log('✅ Licença válida - iniciando aplicação');
+        createWindow();
+    } else {
+        console.log('⚠️ Licença não encontrada - mostrando tela de ativação');
+        createActivationWindow();
+    }
+});
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
@@ -342,3 +656,4 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (error) => {
     console.error('Promise rejeitada:', error);
 });
+

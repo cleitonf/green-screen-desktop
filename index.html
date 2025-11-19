@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Screen Studio Desktop</title>
+    <title>Green Screen Studio</title>
     <style>
         * {
             margin: 0;
@@ -58,6 +58,21 @@
             color: #fff;
             font-size: 1.4rem;
             font-weight: 600;
+        }
+
+        .qr-section {
+            background: rgba(231, 76, 60, 0.15);
+            border: 3px solid #e74c3c;
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: #e74c3c; }
+            50% { border-color: #c0392b; }
+        }
+
+        .qr-section h2 {
+            color: #e74c3c;
         }
 
         .grid-2 {
@@ -138,6 +153,25 @@
             opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
+        }
+
+        .qr-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .qr-input::placeholder {
+            color: rgba(255,255,255,0.5);
         }
 
         .file-input-wrapper {
@@ -407,6 +441,7 @@
             grid-template-columns: 1fr 250px;
             gap: 25px;
             align-items: start;
+            margin-top: 30px;
         }
 
         .camera-container {
@@ -414,6 +449,41 @@
             background: #000;
             border-radius: 10px;
             overflow: hidden;
+        }
+
+        .countdown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .countdown-number {
+            font-size: 120px;
+            font-weight: bold;
+            color: #2ecc71;
+            text-shadow: 0 0 30px rgba(46, 204, 113, 0.8);
+            animation: pulse 1s ease-in-out;
+        }
+
+        .countdown-text {
+            font-size: 24px;
+            color: white;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         #videoElement {
@@ -432,121 +502,97 @@
             gap: 15px;
         }
 
-        /* QR Code Styles */
-        #qrCodeInput {
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            text-align: center;
-            letter-spacing: 2px;
-        }
-
-        #qrCodeInput::placeholder {
-            letter-spacing: 1px;
-            opacity: 0.6;
-        }
-
-        .qr-scanner-container {
-            position: relative;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        #qrVideo {
-            border: 3px solid #3498db;
-            border-radius: 8px;
-        }
-
-        .session-code-display {
-            font-family: 'Courier New', monospace;
-            font-size: 1.2rem;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-
-        /* Session Status Styles */
-        .session-active {
-            border-left: 4px solid #27ae60 !important;
-            background: rgba(39, 174, 96, 0.15) !important;
-        }
-
-        .session-inactive {
-            border-left: 4px solid #f39c12 !important;
-            background: rgba(243, 156, 18, 0.15) !important;
-        }
-
-        /* Enhanced Button States */
-        .btn-session-ready {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
-        }
-
-        /* QR Scanner Overlay */
-        .qr-scanner-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            border: 3px solid #3498db;
-            border-radius: 8px;
-            pointer-events: none;
-            animation: scannerPulse 2s infinite;
-        }
-
-        @keyframes scannerPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Code Format Helper */
-        .code-format-helper {
-            font-size: 12px;
-            color: #bdc3c7;
-            margin-top: 5px;
+        .info-path {
             font-family: monospace;
+            font-size: 14px;
+            color: #3498db;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 5px;
         }
 
-        .code-format-helper.valid {
+        .code-examples {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .code-examples strong {
+            color: #3498db;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .code-examples ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .code-examples li {
+            padding: 4px 0;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .code-examples li:before {
+            content: "✓ ";
             color: #27ae60;
+            font-weight: bold;
+            margin-right: 5px;
         }
 
-        .code-format-helper.invalid {
-            color: #e74c3c;
+        .checklist-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .checklist-item.complete {
+            background: rgba(39, 174, 96, 0.2);
+            border-left: 3px solid #27ae60;
+        }
+
+        .checklist-item.incomplete {
+            background: rgba(231, 76, 60, 0.2);
+            border-left: 3px solid #e74c3c;
+        }
+
+        .checklist-icon {
+            font-size: 24px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎬 Green Screen Studio Desktop</h1>
-            <p>Versão Profissional • Salvamento Automático • Zero Interação</p>
+            <h1>🎬 Green Screen Studio</h1>
+            <p>Versão Profissional</p>
         </div>
 
-        <!-- Banner de Informação -->
         <div class="info-banner">
-            <strong>🚀 Modo Desktop Ativo!</strong> Salvamento totalmente automático em pasta personalizada
+            <strong>🚀 Fluxo Rápido:</strong> Carregue fotos → Escolha pasta → Confirme código = Pronto!
         </div>
 
-        <!-- Seção de Pasta de Destino -->
+        <!-- Pasta de Destino -->
         <div class="section">
-            <h2>📁 Pasta de Destino</h2>
+            <h2>1️⃣ Pasta de Destino</h2>
             <div id="outputFolderDisplay" class="output-folder-display not-selected">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <strong>📂 Pasta Atual:</strong>
-                        <div id="FolderoutputPath" style="margin-top: 5px; font-family: monospace;">
+                        <strong>📂 Pasta Base:</strong>
+                        <div id="outputFolderPath" style="margin-top: 5px; font-family: monospace;">
                             Nenhuma pasta selecionada
                         </div>
                     </div>
                     <div class="quick-actions">
-                        <button id="selectFolderBtn" class="btn btn-primary">Escolher Pasta</button>
+                        <button id="selectFolderBtn" class="btn btn-primary">Escolher Pasta Base</button>
                         <button id="openFolderBtn" class="btn btn-secondary" disabled>Abrir Pasta</button>
                     </div>
                 </div>
@@ -555,7 +601,7 @@
 
         <!-- Seção de Upload/Captura -->
         <div class="section">
-            <h2>1️⃣ Poses com Fundo Verde</h2>
+            <h2>2️⃣ Poses com Fundo Verde</h2>
             
             <div class="grid-2">
                 <div class="card">
@@ -570,10 +616,18 @@
                 </div>
                 
                 <div class="card">
-                    <h3>📹 Captura ao Vivo</h3>
-                    <button id="startCamera" class="btn btn-primary" style="width: 100%;">Iniciar Câmera</button>
+                    <h3>📹 Captura Automática</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600;">
+                            Quantidade de Poses:
+                        </label>
+                        <input type="number" id="numPoses" min="1" max="10" value="4" 
+                               style="width: 100%; padding: 12px; font-size: 18px; font-weight: bold; text-align: center; border-radius: 8px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white;">
+                    </div>
+                    <button id="startCamera" class="btn btn-primary" style="width: 100%;">🚀 Iniciar Captura</button>
                     <div style="font-size: 12px; margin-top: 10px; opacity: 0.8;">
-                        Capturar poses em tempo real
+                        📸 Fotos tiradas automaticamente<br>
+                        ⏱️ Intervalo de 1 segundos
                     </div>
                 </div>
             </div>
@@ -583,13 +637,21 @@
                 <div class="camera-container">
                     <video id="videoElement" autoplay muted playsinline></video>
                     <canvas id="canvasElement"></canvas>
+                    
+                    <!-- Timer de Contagem Regressiva -->
+                    <div id="countdownOverlay" class="countdown-overlay hidden">
+                        <div class="countdown-number" id="countdownNumber">3</div>
+                        <div class="countdown-text">Prepare-se!</div>
+                    </div>
                 </div>
                 <div class="camera-controls">
-                    <button id="capturePhoto" class="btn btn-secondary" disabled>📸 Capturar</button>
-                    <button id="stopCamera" class="btn btn-accent" disabled>⏹️ Parar</button>
+                    <button id="stopCamera" class="btn btn-accent" disabled>⏹️ Parar Captura</button>
                     
                     <div class="status-box">
-                        <span id="statusText">Câmera pronta</span>
+                        <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">
+                            📸 Foto <span id="currentPoseNumber">0</span> de <span id="totalPosesNumber">4</span>
+                        </div>
+                        <div id="statusText" style="font-size: 14px;">Câmera pronta</div>
                     </div>
                 </div>
             </div>
@@ -612,7 +674,7 @@
 
         <!-- Configurações Avançadas -->
         <div class="section">
-            <h2>2️⃣ Configurações de Remoção</h2>
+            <h2>⚙️ Configurações de Processamento</h2>
             <div class="settings-grid">
                 <div class="setting-card">
                     <label for="tolerance">Sensibilidade Verde</label>
@@ -650,7 +712,7 @@
 
         <!-- Seção de Fundos -->
         <div class="section">
-            <h2>3️⃣ Fundos Personalizados</h2>
+            <h2>🎨 Fundos Personalizados</h2>
             <div class="grid-2">
                 <div class="card">
                     <h3>📁 Adicionar Fundos</h3>
@@ -678,20 +740,84 @@
             <div class="backgrounds-grid" id="backgroundsGrid"></div>
         </div>
 
-        <!-- Processamento -->
-        <div class="section">
-            <h2>4️⃣ Processamento Automático</h2>
+        <!-- ===== SEÇÃO QR CODE - ÚLTIMA ETAPA ===== -->
+        <div class="section qr-section">
+            <h2>3️⃣ CONFIRMAR CÓDIGO E PROCESSAR</h2>
             
-            <div style="text-align: center; padding: 20px;">
-                <button id="autoGenerate" class="btn btn-pro" disabled>
-                    🚀 PROCESSAR E SALVAR AUTOMATICAMENTE
-                </button>
-                <div style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
-                    Salvamento automático em pasta personalizada - zero interação!
+            <!-- Checklist de pré-requisitos -->
+            <div style="background: rgba(0, 0, 0, 0.3); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px; color: #fff;">✅ Checklist de Preparação:</h3>
+                <div id="checklistContainer">
+                    <div class="checklist-item incomplete" id="checkFolder">
+                        <span class="checklist-icon">❌</span>
+                        <div>
+                            <strong>Pasta Base Selecionada</strong>
+                            <div style="font-size: 12px; opacity: 0.8;">Escolha onde salvar as fotos</div>
+                        </div>
+                    </div>
+                    <div class="checklist-item incomplete" id="checkPoses">
+                        <span class="checklist-icon">❌</span>
+                        <div>
+                            <strong>Poses Carregadas</strong>
+                            <div style="font-size: 12px; opacity: 0.8;">Fotos com fundo verde prontas</div>
+                        </div>
+                    </div>
+                    <div class="checklist-item incomplete" id="checkBackgrounds">
+                        <span class="checklist-icon">❌</span>
+                        <div>
+                            <strong>Fundos Disponíveis</strong>
+                            <div style="font-size: 12px; opacity: 0.8;">Fundos padrão já incluídos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div>
+                    <h3 style="margin-bottom: 15px;">📱 Digite ou Bipe o Código</h3>
+                    <input type="text" id="qrCodeInput" class="qr-input" placeholder="AAAA-1234567" maxlength="12">
+                    <button id="setSessionBtn" class="btn btn-primary" style="width: 100%; font-size: 18px; padding: 20px;" disabled>
+                        🚀 CONFIRMAR E PROCESSAR
+                    </button>
+                    <div style="text-align: center; margin-top: 15px; font-size: 14px; color: #2ecc71; font-weight: bold;">
+                        ⚡ Ao confirmar, o processamento iniciará automaticamente!
+                    </div>
+                    
+                    <div class="code-examples">
+                        <strong>📋 Formato Padrão QR Code:</strong>
+                        <ul>
+                            <li>ABCD-1234567 ✅</li>
+                            <li>TEST-ABC1234 ✅</li>
+                            <li>1234-ABCDEFG ✅</li>
+                        </ul>
+                        <small style="color: rgba(255, 255, 255, 0.6); display: block; margin-top: 8px;">
+                            <strong>4 caracteres + HÍFEN + 7 caracteres</strong><br>
+                            Pode usar letras (A-Z) e números (0-9)
+                        </small>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 style="margin-bottom: 15px;">👤 Cliente Atual</h3>
+                    <div id="currentSessionDisplay" class="status-box status-warning" style="min-height: 100px; display: flex; flex-direction: column; justify-content: center;">
+                        <strong>⚠️ Aguardando código</strong>
+                        <div style="font-size: 14px; margin-top: 5px;">Complete os passos acima primeiro</div>
+                    </div>
+                    <button id="clearSessionBtn" class="btn btn-accent" style="width: 100%; margin-top: 15px;" disabled>🗑️ Cancelar e Limpar</button>
                 </div>
             </div>
 
-            <div class="progress-section hidden" id="progressSection">
+            <div id="sessionFolderInfo" class="info-path" style="display: none;">
+                <strong>📁 Pasta do Cliente:</strong>
+                <div id="sessionFolderPath" style="margin-top: 5px;"></div>
+            </div>
+        </div>
+
+        <!-- Processamento -->
+        <div class="section hidden" id="processingSection">
+            <h2>4️⃣ Processamento em Andamento</h2>
+            
+            <div class="progress-section" id="progressSection">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
@@ -716,553 +842,6 @@
         </div>
     </div>
 
-    <script>
-        class DesktopGreenScreenStudio {
-            constructor() {
-                this.poses = [];
-                this.backgrounds = [];
-                this.stream = null;
-                this.settings = {
-                    tolerance: 35,
-                    quality: 8,
-                    spillReduction: 20
-                };
-                this.config = {};
-                this.outputFolder = '';
-                
-                this.initializeElements();
-                this.setupEventListeners();
-                this.loadElectronConfig();
-                this.loadDefaultBackgrounds();
-                this.updateUI();
-            }
-
-            initializeElements() {
-                // Elements
-                this.video = document.getElementById('videoElement');
-                this.canvas = document.getElementById('canvasElement');
-                this.ctx = this.canvas.getContext('2d');
-                
-                // Buttons
-                this.selectFolderBtn = document.getElementById('selectFolderBtn');
-                this.openFolderBtn = document.getElementById('openFolderBtn');
-                this.startCameraBtn = document.getElementById('startCamera');
-                this.captureBtn = document.getElementById('capturePhoto');
-                this.stopCameraBtn = document.getElementById('stopCamera');
-                this.autoGenerateBtn = document.getElementById('autoGenerate');
-                this.clearPosesBtn = document.getElementById('clearPoses');
-                
-                // Display elements
-                this.outputFolderDisplay = document.getElementById('outputFolderDisplay');
-                this.outputFolderPath = document.getElementById('outputFolderPath');
-                this.poseCountSpan = document.getElementById('poseCount');
-                this.backgroundCountSpan = document.getElementById('backgroundCount');
-                this.statusText = document.getElementById('statusText');
-                this.poseStatus = document.getElementById('poseStatus');
-                this.totalCombinations = document.getElementById('totalCombinations');
-                this.posesGrid = document.getElementById('posesGrid');
-                this.backgroundsGrid = document.getElementById('backgroundsGrid');
-                this.cameraSection = document.getElementById('cameraSection');
-                
-                // Progress elements
-                this.progressSection = document.getElementById('progressSection');
-                this.progressFill = document.getElementById('progressFill');
-                this.progressText = document.getElementById('progressText');
-                this.folderInfo = document.getElementById('folderInfo');
-                this.completionMessage = document.getElementById('completionMessage');
-                
-                // Processing overlay
-                this.processingOverlay = document.getElementById('processingOverlay');
-                this.processingTitle = document.getElementById('processingTitle');
-                this.processingStatus = document.getElementById('processingStatus');
-                this.processingDetails = document.getElementById('processingDetails');
-                
-                // Input elements
-                this.poseInput = document.getElementById('poseInput');
-                this.backgroundInput = document.getElementById('backgroundInput');
-                
-                // Settings
-                this.toleranceSlider = document.getElementById('tolerance');
-                this.qualitySlider = document.getElementById('quality');
-                this.spillReductionSlider = document.getElementById('spillReduction');
-                this.autoOpenFolderCheck = document.getElementById('autoOpenFolder');
-                this.highQualityCheck = document.getElementById('highQuality');
-            }
-
-            async loadElectronConfig() {
-                if (window.electronAPI) {
-                    try {
-                        this.config = await window.electronAPI.getConfig();
-                        
-                        // Aplicar configurações
-                        if (this.config.outputFolder) {
-                            this.setOutputFolder(this.config.outputFolder);
-                        }
-                        
-                        if (this.config.settings) {
-                            this.settings = { ...this.settings, ...this.config.settings };
-                            this.applySettings();
-                        }
-                        
-                        if (this.config.autoOpenFolder !== undefined) {
-                            this.autoOpenFolderCheck.checked = this.config.autoOpenFolder;
-                        }
-                        
-                    } catch (error) {
-                        console.error('Erro ao carregar configurações:', error);
-                    }
-                }
-            }
-
-            applySettings() {
-                this.toleranceSlider.value = this.settings.tolerance;
-                this.qualitySlider.value = this.settings.quality;
-                this.spillReductionSlider.value = this.settings.spillReduction || 20;
-                
-                document.getElementById('toleranceValue').textContent = this.settings.tolerance;
-                document.getElementById('qualityValue').textContent = this.settings.quality;
-                document.getElementById('spillReductionValue').textContent = this.settings.spillReduction || 20;
-            }
-
-            setupEventListeners() {
-                // Electron-specific
-                if (window.electronAPI) {
-                    this.selectFolderBtn.addEventListener('click', () => this.selectOutputFolder());
-                    this.openFolderBtn.addEventListener('click', () => window.electronAPI.openOutputFolder());
-                    
-                    window.electronAPI.onOutputFolderChanged((event, folder) => {
-                        this.setOutputFolder(folder);
-                    });
-                    
-                    window.electronAPI.onSaveProgress((event, progress) => {
-                        this.updateSaveProgress(progress);
-                    });
-                }
-                
-                // Camera controls
-                this.startCameraBtn.addEventListener('click', () => this.startCamera());
-                this.captureBtn.addEventListener('click', () => this.capturePhoto());
-                this.stopCameraBtn.addEventListener('click', () => this.stopCamera());
-                
-                // File inputs
-                this.poseInput.addEventListener('change', (e) => this.handlePoseUpload(e));
-                this.backgroundInput.addEventListener('change', (e) => this.handleBackgroundUpload(e));
-                
-                // Actions
-                this.autoGenerateBtn.addEventListener('click', () => this.startAutoGeneration());
-                this.clearPosesBtn.addEventListener('click', () => this.clearAllPoses());
-                
-                // Settings
-                this.toleranceSlider.addEventListener('input', (e) => {
-                    this.settings.tolerance = parseInt(e.target.value);
-                    document.getElementById('toleranceValue').textContent = e.target.value;
-                    this.saveSettings();
-                });
-                
-                this.qualitySlider.addEventListener('input', (e) => {
-                    this.settings.quality = parseInt(e.target.value);
-                    document.getElementById('qualityValue').textContent = e.target.value;
-                    this.saveSettings();
-                });
-                
-                this.spillReductionSlider.addEventListener('input', (e) => {
-                    this.settings.spillReduction = parseInt(e.target.value);
-                    document.getElementById('spillReductionValue').textContent = e.target.value;
-                    this.saveSettings();
-                });
-                
-                this.autoOpenFolderCheck.addEventListener('change', () => this.saveSettings());
-                this.highQualityCheck.addEventListener('change', () => this.saveSettings());
-            }
-
-            async saveSettings() {
-                if (window.electronAPI) {
-                    try {
-                        await window.electronAPI.saveConfig({
-                            chromaSettings: this.settings,
-                            autoOpenFolder: this.autoOpenFolderCheck.checked,
-                            imageQuality: this.highQualityCheck.checked ? 95 : 80
-                        });
-                    } catch (error) {
-                        console.error('Erro ao salvar configurações:', error);
-                    }
-                }
-            }
-
-            async selectOutputFolder() {
-                if (window.electronAPI) {
-                    try {
-                        const folder = await window.electronAPI.selectOutputFolder();
-                        if (folder) {
-                            this.setOutputFolder(folder);
-                        }
-                    } catch (error) {
-                        console.error('Erro ao selecionar pasta:', error);
-                    }
-                }
-            }
-
-            setOutputFolder(folder) {
-                this.outputFolder = folder;
-                this.outputFolderPath.textContent = folder;
-                this.outputFolderDisplay.classList.remove('not-selected');
-                this.outputFolderDisplay.classList.add('status-success');
-                this.openFolderBtn.disabled = false;
-                this.updateUI();
-            }
-
-            async startCamera() {
-                try {
-                    this.cameraSection.classList.remove('hidden');
-                    this.stream = await navigator.mediaDevices.getUserMedia({
-                        video: { 
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
-                    });
-                    this.video.srcObject = this.stream;
-                    
-                    this.startCameraBtn.disabled = true;
-                    this.captureBtn.disabled = false;
-                    this.stopCameraBtn.disabled = false;
-                    this.statusText.textContent = 'Câmera ativa - Clique para capturar';
-                } catch (error) {
-                    alert('Erro ao acessar a câmera: ' + error.message);
-                    this.cameraSection.classList.add('hidden');
-                }
-            }
-
-            stopCamera() {
-                if (this.stream) {
-                    this.stream.getTracks().forEach(track => track.stop());
-                    this.video.srcObject = null;
-                    this.stream = null;
-                }
-                
-                this.startCameraBtn.disabled = false;
-                this.captureBtn.disabled = true;
-                this.stopCameraBtn.disabled = true;
-                this.statusText.textContent = 'Câmera desligada';
-                this.cameraSection.classList.add('hidden');
-            }
-
-            capturePhoto() {
-                this.canvas.width = this.video.videoWidth;
-                this.canvas.height = this.video.videoHeight;
-                this.ctx.drawImage(this.video, 0, 0);
-                
-                const imageData = this.canvas.toDataURL('image/png');
-                this.poses.push({
-                    id: this.poses.length + 1,
-                    data: imageData,
-                    source: 'camera'
-                });
-                
-                this.updateUI();
-                this.statusText.textContent = `Pose ${this.poses.length} capturada!`;
-            }
-
-            handlePoseUpload(event) {
-                const files = Array.from(event.target.files);
-                
-                if (files.length === 0) return;
-                
-                this.poseStatus.textContent = `Carregando ${files.length} foto(s)...`;
-                
-                files.forEach((file, index) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        this.poses.push({
-                            id: this.poses.length + 1,
-                            data: e.target.result,
-                            source: 'upload',
-                            filename: file.name
-                        });
-                        
-                        this.updateUI();
-                        
-                        if (index === files.length - 1) {
-                            this.poseStatus.textContent = `${files.length} foto(s) carregada(s) com sucesso!`;
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                });
-                
-                event.target.value = '';
-            }
-
-            clearAllPoses() {
-                if (this.poses.length === 0) return;
-                
-                const confirmed = confirm(`Limpar todas as ${this.poses.length} poses?`);
-                if (confirmed) {
-                    this.poses = [];
-                    this.poseStatus.textContent = 'Poses limpas';
-                    this.updateUI();
-                }
-            }
-
-            loadDefaultBackgrounds() {
-                const defaultBackgrounds = [
-                    { name: 'Céu Azul', gradient: ['#87CEEB', '#4682B4'] },
-                    { name: 'Pôr do Sol', gradient: ['#FF6B6B', '#FFE66D'] },
-                    { name: 'Floresta', gradient: ['#2ECC71', '#27AE60'] },
-                    { name: 'Noturno', gradient: ['#2C3E50', '#8E44AD'] }
-                ];
-
-                defaultBackgrounds.forEach(bg => this.createGradientBackground(bg));
-            }
-
-            createGradientBackground(bg) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 1920;
-                canvas.height = 1080;
-                const ctx = canvas.getContext('2d');
-                
-                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                gradient.addColorStop(0, bg.gradient[0]);
-                gradient.addColorStop(1, bg.gradient[1]);
-                
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                this.backgrounds.push({
-                    id: this.backgrounds.length + 1,
-                    name: bg.name,
-                    data: canvas.toDataURL('image/png')
-                });
-            }
-
-            handleBackgroundUpload(event) {
-                const files = Array.from(event.target.files);
-                
-                files.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        this.backgrounds.push({
-                            id: this.backgrounds.length + 1,
-                            name: file.name.replace(/\.[^/.]+$/, ""),
-                            data: e.target.result
-                        });
-                        this.updateUI();
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-
-            updateUI() {
-                // Counters
-                this.poseCountSpan.textContent = this.poses.length;
-                this.backgroundCountSpan.textContent = this.backgrounds.length;
-                this.totalCombinations.textContent = this.poses.length * this.backgrounds.length;
-                
-                // Poses grid
-                this.posesGrid.innerHTML = '';
-                this.poses.forEach((pose, index) => {
-                    const poseDiv = document.createElement('div');
-                    poseDiv.className = 'pose-item';
-                    
-                    const sourceIcon = pose.source === 'camera' ? '📸' : '📁';
-                    
-                    poseDiv.innerHTML = `
-                        <img src="${pose.data}" alt="Pose ${pose.id}">
-                        <div class="pose-number">${sourceIcon} ${pose.id}</div>
-                    `;
-                    poseDiv.title = pose.filename || `Pose capturada ${pose.id}`;
-                    this.posesGrid.appendChild(poseDiv);
-                });
-                
-                // Backgrounds grid
-                this.backgroundsGrid.innerHTML = '';
-                this.backgrounds.forEach(bg => {
-                    const bgDiv = document.createElement('div');
-                    bgDiv.className = 'background-item';
-                    bgDiv.innerHTML = `<img src="${bg.data}" alt="${bg.name}" title="${bg.name}">`;
-                    this.backgroundsGrid.appendChild(bgDiv);
-                });
-                
-                // Generate button
-                const canGenerate = this.poses.length > 0 && this.backgrounds.length > 0 && this.outputFolder;
-                this.autoGenerateBtn.disabled = !canGenerate;
-                
-                // Clear button
-                this.clearPosesBtn.disabled = this.poses.length === 0;
-                
-                // Update status
-                if (this.poses.length > 0 && this.poseStatus.textContent.includes('Carregue')) {
-                    this.poseStatus.textContent = `${this.poses.length} pose(s) pronta(s)`;
-                }
-            }
-
-            async startAutoGeneration() {
-                if (!this.outputFolder) {
-                    alert('Selecione uma pasta de destino primeiro!');
-                    return;
-                }
-                
-                if (this.poses.length === 0 || this.backgrounds.length === 0) return;
-                
-                this.processingOverlay.style.display = 'flex';
-                this.progressSection.classList.remove('hidden');
-                this.folderInfo.classList.add('hidden');
-                
-                const totalImages = this.poses.length * this.backgrounds.length;
-                let processedImages = 0;
-                const allResults = [];
-                
-                try {
-                    this.processingTitle.textContent = 'Processando Imagens...';
-                    this.processingStatus.textContent = 'Removendo fundos verdes';
-                    this.updateProgress(0, 'Iniciando processamento...');
-                    
-                    // Process all images
-                    for (let poseIndex = 0; poseIndex < this.poses.length; poseIndex++) {
-                        for (let bgIndex = 0; bgIndex < this.backgrounds.length; bgIndex++) {
-                            const result = await this.processImage(
-                                this.poses[poseIndex],
-                                this.backgrounds[bgIndex]
-                            );
-                            
-                            allResults.push(result);
-                            processedImages++;
-                            
-                            const progress = (processedImages / totalImages) * 100;
-                            this.updateProgress(progress, `Processando ${processedImages}/${totalImages}...`);
-                            this.processingDetails.textContent = `Pose ${this.poses[poseIndex].id} + ${this.backgrounds[bgIndex].name}`;
-                            
-                            await new Promise(resolve => setTimeout(resolve, 30));
-                        }
-                    }
-                    
-                    // Save all images
-                    this.processingTitle.textContent = 'Salvando Automaticamente...';
-                    this.processingStatus.textContent = 'Salvando na pasta selecionada';
-                    this.processingDetails.textContent = 'Zero interação necessária!';
-                    
-                    const saveResult = await window.electronAPI.saveImagesBatch(allResults);
-                    
-                    this.showCompletionMessage(saveResult);
-                    
-                } catch (error) {
-                    alert('Erro no processamento: ' + error.message);
-                    console.error(error);
-                } finally {
-                    this.processingOverlay.style.display = 'none';
-                }
-            }
-
-            updateSaveProgress(progress) {
-                this.processingDetails.textContent = `Salvando: ${progress.filename}`;
-            }
-
-            async processImage(pose, background) {
-                return new Promise((resolve) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    const poseImg = new Image();
-                    const bgImg = new Image();
-                    
-                    let loadedCount = 0;
-                    const checkLoaded = () => {
-                        loadedCount++;
-                        if (loadedCount === 2) {
-                            canvas.width = Math.max(poseImg.width, bgImg.width);
-                            canvas.height = Math.max(poseImg.height, bgImg.height);
-                            
-                            // Draw background
-                            ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-                            
-                            // Apply chroma key
-                            this.applyAdvancedChromaKey(ctx, poseImg, canvas.width, canvas.height);
-                            
-                            const poseDesc = pose.filename ? 
-                                pose.filename.replace(/\.[^/.]+$/, "").substring(0, 20) : 
-                                `Pose_${pose.id}`;
-                            const bgDesc = background.name.replace(/[^a-zA-Z0-9]/g, '_');
-                            
-                            resolve({
-                                filename: `${poseDesc}_${bgDesc}.png`,
-                                data: canvas.toDataURL('image/png'),
-                                poseId: pose.id,
-                                backgroundId: background.id
-                            });
-                        }
-                    };
-                    
-                    poseImg.onload = checkLoaded;
-                    bgImg.onload = checkLoaded;
-                    poseImg.src = pose.data;
-                    bgImg.src = background.data;
-                });
-            }
-
-            applyAdvancedChromaKey(ctx, sourceImg, width, height) {
-                const tempCanvas = document.createElement('canvas');
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCanvas.width = sourceImg.width;
-                tempCanvas.height = sourceImg.height;
-                
-                tempCtx.drawImage(sourceImg, 0, 0);
-                
-                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                const data = imageData.data;
-                
-                const tolerance = this.settings.tolerance / 100;
-                const smoothness = this.settings.quality / 100;
-                const spillReduction = this.settings.spillReduction / 100;
-                
-                for (let i = 0; i < data.length; i += 4) {
-                    const r = data[i];
-                    const g = data[i + 1];
-                    const b = data[i + 2];
-                    
-                    // Advanced green detection
-                    const greenness = (g - Math.max(r, b)) / 255;
-                    const isGreen = greenness > tolerance;
-                    
-                    if (isGreen) {
-                        const alpha = Math.max(0, 1 - (greenness - tolerance) / smoothness);
-                        data[i + 3] = Math.floor(data[i + 3] * alpha);
-                    } else if (spillReduction > 0) {
-                        // Spill reduction
-                        const spillAmount = Math.max(0, greenness - 0.1) * spillReduction;
-                        data[i + 1] = Math.max(0, g - spillAmount * 255);
-                    }
-                }
-                
-                tempCtx.putImageData(imageData, 0, 0);
-                
-                // Scale and center
-                const scale = Math.min(width / tempCanvas.width, height / tempCanvas.height);
-                const newWidth = tempCanvas.width * scale;
-                const newHeight = tempCanvas.height * scale;
-                const x = (width - newWidth) / 2;
-                const y = (height - newHeight) / 2;
-                
-                ctx.drawImage(tempCanvas, x, y, newWidth, newHeight);
-            }
-
-            updateProgress(percentage, text) {
-                this.progressFill.style.width = percentage + '%';
-                this.progressText.textContent = text;
-            }
-
-            showCompletionMessage(saveResult) {
-                this.progressSection.classList.add('hidden');
-                this.completionMessage.innerHTML = `
-                    ${saveResult.count} imagens salvas automaticamente!<br>
-                    <strong style="color: #2ecc71;">📁 ${saveResult.folder}</strong><br>
-                    <small>Pasta aberta automaticamente no explorador</small>
-                `;
-                this.folderInfo.classList.remove('hidden');
-            }
-        }
-
-        // Initialize the desktop application
-        document.addEventListener('DOMContentLoaded', () => {
-            new DesktopGreenScreenStudio();
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>

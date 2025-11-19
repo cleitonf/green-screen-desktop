@@ -8,7 +8,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     
     // Gerenciamento de arquivos
     selectOutputFolder: () => ipcRenderer.invoke('select-output-folder'),
-    saveImagesBatch: (images) => ipcRenderer.invoke('save-images-batch', images),
+    
+    saveImagesBatch: (results, session) => {
+    console.log('🔗 Preload - sessionFolder:', session?.sessionFolder);
+    return ipcRenderer.invoke('save-images-batch', results, session);
+},
+    
     openOutputFolder: () => ipcRenderer.invoke('open-output-folder'),
     
     // Event listeners
@@ -24,3 +29,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     platform: process.platform,
     isElectron: true
 });
+
+console.log('✅ Preload script carregado - electronAPI disponível');
